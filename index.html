@@ -814,6 +814,7 @@
 /* ============ 数据层 ============ */
 const LS_PRESETS = 'sales_presets';
 const LS_RECORDS = 'sales_records';
+const LS_PRESETS_INIT = 'sales_presets_init';
 
 function loadPresets() {
   try {
@@ -834,7 +835,13 @@ function saveRecords(arr) { localStorage.setItem(LS_RECORDS, JSON.stringify(arr)
 
 // 初始化默认预设（首次使用）
 function initDefaultPresets() {
-  if (loadPresets().length > 0) return;
+  // 已初始化过（无论是否为空），不再生成默认预设
+  if (localStorage.getItem(LS_PRESETS_INIT) === '1') return;
+  // 迁移：老用户已有预设但未设置标记，只打标不覆盖
+  if (loadPresets().length > 0) {
+    localStorage.setItem(LS_PRESETS_INIT, '1');
+    return;
+  }
   const defaults = [
     { id: uid(), name: 'iPhone 15 Pro', category: 'phone', price: 8999, commission: 150, commissionType: 'fixed' },
     { id: uid(), name: 'iPhone 15', category: 'phone', price: 5999, commission: 100, commissionType: 'fixed' },
@@ -850,6 +857,7 @@ function initDefaultPresets() {
     { id: uid(), name: '回收旧安卓', category: 'recycle', price: 300, commission: 20, commissionType: 'fixed' },
   ];
   savePresets(defaults);
+  localStorage.setItem(LS_PRESETS_INIT, '1');
 }
 initDefaultPresets();
 
