@@ -1,0 +1,1514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1e88e5">
+<title>销售记账</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  :root {
+    --primary: #1e88e5;
+    --primary-dark: #1565c0;
+    --primary-light: #e3f2fd;
+    --accent: #ff6f00;
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --text: #1a1a2e;
+    --text-secondary: #6b7280;
+    --border: #e5e7eb;
+    --success: #10b981;
+    --danger: #ef4444;
+    --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+  html, body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 14px;
+    line-height: 1.5;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  body { padding-bottom: 70px; min-height: 100vh; }
+
+  /* 页面切换 */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* 底部导航栏 */
+  .tab-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #fff;
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 30;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .tab-item {
+    flex: 1;
+    padding: 8px 0;
+    text-align: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: 11px;
+    transition: color 0.2s;
+  }
+  .tab-item.active { color: var(--primary); }
+  .tab-item .tab-icon { font-size: 20px; line-height: 1; margin-bottom: 2px; }
+
+  /* 底部添加按钮（首页） */
+  .fab-container {
+    position: fixed;
+    bottom: 100px; left: 0; right: 0;
+    background: linear-gradient(to top, var(--bg) 60%, transparent);
+    padding: 10px 16px 14px;
+    z-index: 20;
+    display: flex;
+    justify-content: center;
+    pointer-events: none;
+  }
+  .fab-container.hide { display: none; }
+  .fab-container .fab { pointer-events: auto; }
+
+  /* 顶部栏 */
+  .header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: #fff;
+    padding: 20px 16px 24px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: var(--shadow);
+  }
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .header h1 { font-size: 20px; font-weight: 600; }
+  .header .date-text { font-size: 12px; opacity: 0.85; }
+  .icon-btn {
+    background: rgba(255,255,255,0.18);
+    border: none;
+    color: #fff;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+  }
+  .icon-btn:active { background: rgba(255,255,255,0.35); }
+
+  /* 统计卡片 */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .stat-card {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(8px);
+    border-radius: 12px;
+    padding: 12px 10px;
+    text-align: center;
+  }
+  .stat-label { font-size: 11px; opacity: 0.85; margin-bottom: 4px; }
+  .stat-value { font-size: 17px; font-weight: 700; }
+  .stat-value.small { font-size: 15px; }
+
+  /* 通用卡片 */
+  .section {
+    margin: 16px;
+    background: var(--card);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .section-header {
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-title { font-size: 15px; font-weight: 600; }
+  .section-action { font-size: 13px; color: var(--primary); cursor: pointer; }
+
+  /* 日历 */
+  .cal-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+  }
+  .cal-nav-btn {
+    background: var(--primary-light);
+    border: none;
+    color: var(--primary);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cal-nav-btn:active { opacity: 0.7; }
+  .cal-month { font-size: 15px; font-weight: 600; }
+  .cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding: 6px 8px;
+  }
+  .cal-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    padding: 4px 8px 12px;
+  }
+  .cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s;
+    padding: 2px;
+  }
+  .cal-day.empty { cursor: default; }
+  .cal-day:not(.empty):active { background: var(--primary-light); }
+  .cal-day .day-num { font-size: 14px; font-weight: 500; }
+  .cal-day .day-comm {
+    font-size: 10px;
+    color: var(--accent);
+    margin-top: 1px;
+    font-weight: 600;
+  }
+  .cal-day.today { background: var(--primary); color: #fff; }
+  .cal-day.today .day-comm { color: #ffe0b2; }
+  .cal-day.has-record:not(.today) { background: #f0f9ff; }
+  .cal-day.selected:not(.today) { background: var(--primary-light); border: 1.5px solid var(--primary); }
+  .cal-day.out-month .day-num { color: #cbd5e1; }
+
+  .fab {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 14px 40px;
+    border-radius: 28px;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 16px rgba(30,136,229,0.4);
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .fab:active { transform: scale(0.96); }
+  .fab .plus { font-size: 20px; line-height: 1; }
+
+  /* 弹窗 */
+  .modal-mask {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 100;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-mask.show { display: flex; animation: fadeIn 0.2s; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal {
+    background: var(--card);
+    width: 100%;
+    max-width: 500px;
+    border-radius: 18px 18px 0 0;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    animation: slideUp 0.25s ease;
+  }
+  .modal-header {
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-title { font-size: 17px; font-weight: 600; }
+  .modal-close {
+    background: none; border: none; font-size: 22px; color: var(--text-secondary);
+    cursor: pointer; width: 32px; height: 32px; line-height: 1;
+  }
+  .modal-body { padding: 16px; overflow-y: auto; flex: 1; }
+  .modal-footer {
+    padding: 12px 16px 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+  }
+
+  /* 表单 */
+  .form-group { margin-bottom: 14px; }
+  .form-label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .form-input, .form-select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    font-size: 15px;
+    background: #fafafa;
+    transition: border-color 0.2s;
+    font-family: inherit;
+  }
+  .form-input:focus, .form-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: #fff;
+  }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* 三栏下拉选择行 */
+  .bundle-row { display: flex; flex-direction: column; gap: 10px; }
+  .bundle-item {
+    display: grid;
+    grid-template-columns: 56px 1fr 70px;
+    gap: 8px;
+    align-items: end;
+    background: #fafafa;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 10px;
+  }
+  .bundle-item .bi-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-align: center;
+    padding-bottom: 10px;
+  }
+  .bundle-item .bi-select { width: 100%; }
+  .bundle-item .bi-qty { width: 100%; }
+  .bundle-item .bi-info {
+    grid-column: 1 / -1;
+    font-size: 12px;
+    color: var(--text-secondary);
+    padding-top: 4px;
+    border-top: 1px dashed var(--border);
+  }
+
+  /* 预设商品列表 */
+  .preset-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .preset-tab {
+    padding: 6px 14px;
+    background: #f1f5f9;
+    border-radius: 16px;
+    font-size: 13px;
+    white-space: nowrap;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    color: var(--text-secondary);
+  }
+  .preset-tab.active { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+  .preset-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .preset-item {
+    padding: 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    cursor: pointer;
+    background: #fafafa;
+    transition: all 0.15s;
+  }
+  .preset-item:active { border-color: var(--primary); background: var(--primary-light); }
+  .preset-item .p-name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .preset-item .p-price { font-size: 12px; color: var(--text-secondary); }
+  .preset-item .p-comm { font-size: 12px; color: var(--accent); margin-top: 2px; }
+  .empty-state {
+    text-align: center;
+    padding: 30px 20px;
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+
+  /* 按钮 */
+  .btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    font-family: inherit;
+  }
+  .btn:active { opacity: 0.8; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-secondary { background: #f1f5f9; color: var(--text); }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-block { width: 100%; }
+
+  /* 当日销售明细 */
+  .record-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .record-item:last-child { border-bottom: none; }
+  .record-left .r-name { font-size: 14px; font-weight: 600; }
+  .record-left .r-qty { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .record-right { text-align: right; }
+  .record-right .r-amount { font-size: 14px; font-weight: 600; }
+  .record-right .r-comm { font-size: 12px; color: var(--accent); margin-top: 2px; }
+  .record-del {
+    background: none; border: none; color: var(--danger); font-size: 13px;
+    padding: 4px 8px; cursor: pointer; margin-left: 8px;
+  }
+
+  /* 预设管理列表 */
+  .pm-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    background: #fafafa;
+  }
+  .pm-info { flex: 1; }
+  .pm-name { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .pm-detail { font-size: 12px; color: var(--text-secondary); }
+  .pm-actions { display: flex; gap: 6px; }
+  .pm-actions button {
+    background: none; border: none; cursor: pointer; padding: 6px; font-size: 13px;
+  }
+  .pm-actions .edit { color: var(--primary); }
+  .pm-actions .del { color: var(--danger); }
+
+  /* 分类标签 */
+  .cat-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    margin-left: 6px;
+  }
+  .cat-phone { background: #e3f2fd; color: #1565c0; }
+  .cat-acc { background: #f3e5f5; color: #7b1fa2; }
+  .cat-recycle { background: #e8f5e9; color: #2e7d32; }
+
+  .hint { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* ============ 总结页样式 ============ */
+  .summary-header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: #fff;
+    padding: 20px 16px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: var(--shadow);
+  }
+  .period-tabs {
+    display: flex;
+    gap: 6px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+  }
+  .period-tab {
+    padding: 6px 14px;
+    background: rgba(255,255,255,0.18);
+    border-radius: 16px;
+    font-size: 13px;
+    cursor: pointer;
+    border: none;
+    color: #fff;
+  }
+  .period-tab.active { background: #fff; color: var(--primary-dark); font-weight: 600; }
+
+  .summary-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin: 16px;
+  }
+  .sum-stat {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .sum-stat .ss-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 6px; }
+  .sum-stat .ss-value { font-size: 17px; font-weight: 700; }
+  .sum-stat .ss-value.comm { color: var(--accent); }
+
+  .cat-bar-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .cat-bar-item:last-child { border-bottom: none; }
+  .cat-bar-label {
+    width: 50px;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .cat-bar-track {
+    flex: 1;
+    height: 18px;
+    background: #f1f5f9;
+    border-radius: 9px;
+    overflow: hidden;
+    margin: 0 10px;
+    position: relative;
+  }
+  .cat-bar-fill {
+    height: 100%;
+    border-radius: 9px;
+    transition: width 0.4s ease;
+  }
+  .cat-bar-fill.phone { background: linear-gradient(90deg, #42a5f5, #1565c0); }
+  .cat-bar-fill.acc { background: linear-gradient(90deg, #ba68c8, #7b1fa2); }
+  .cat-bar-fill.recycle { background: linear-gradient(90deg, #81c784, #2e7d32); }
+  .cat-bar-fill.other { background: linear-gradient(90deg, #90a4ae, #455a64); }
+  .cat-bar-value {
+    width: 90px;
+    text-align: right;
+    font-size: 12px;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+
+  .rank-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .rank-item:last-child { border-bottom: none; }
+  .rank-num {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+    flex-shrink: 0;
+  }
+  .rank-item.top1 .rank-num { background: #ffd54f; color: #5d4037; }
+  .rank-item.top2 .rank-num { background: #b0bec5; color: #37474f; }
+  .rank-item.top3 .rank-num { background: #ffab91; color: #bf360c; }
+  .rank-info { flex: 1; min-width: 0; }
+  .rank-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rank-sub { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
+  .rank-amount { font-size: 14px; font-weight: 600; color: var(--accent); margin-left: 8px; flex-shrink: 0; }
+
+  /* 每日趋势柱状图 */
+  .trend-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    height: 120px;
+    padding: 8px 0;
+    gap: 3px;
+  }
+  .trend-bar-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+    min-width: 0;
+  }
+  .trend-bar {
+    width: 70%;
+    max-width: 18px;
+    background: linear-gradient(to top, var(--primary), #64b5f6);
+    border-radius: 3px 3px 0 0;
+    min-height: 2px;
+    position: relative;
+  }
+  .trend-bar-label {
+    font-size: 9px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== 首页 ========== -->
+<div id="page-home" class="page active">
+
+<!-- 顶部 -->
+<div class="header">
+  <div class="header-top">
+    <div>
+      <h1>销售记账</h1>
+      <div class="date-text" id="todayText"></div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="icon-btn" onclick="exportCSV()" title="导出CSV(Excel)">📊</button>
+      <button class="icon-btn" onclick="exportJSON()" title="导出备份(JSON)">💾</button>
+      <button class="icon-btn" onclick="openPresetManager()" title="商品预设">⚙</button>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">今日提成</div>
+      <div class="stat-value" id="todayComm">¥0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">本月提成</div>
+      <div class="stat-value" id="monthComm">¥0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">本月销售额</div>
+      <div class="stat-value small" id="monthSales">¥0</div>
+    </div>
+  </div>
+</div>
+
+<!-- 日历 -->
+<div class="section">
+  <div class="cal-nav">
+    <button class="cal-nav-btn" onclick="changeMonth(-1)">‹</button>
+    <div class="cal-month" id="calMonthTitle"></div>
+    <button class="cal-nav-btn" onclick="changeMonth(1)">›</button>
+  </div>
+  <div class="cal-weekdays">
+    <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+  </div>
+  <div class="cal-days" id="calDays"></div>
+</div>
+
+<!-- 底部添加按钮 -->
+<div class="fab-container">
+  <button class="fab" onclick="openAddModal()">
+    <span class="plus">+</span> 添加销售
+  </button>
+</div>
+
+</div><!-- /page-home -->
+
+<!-- ========== 总结页 ========== -->
+<div id="page-summary" class="page">
+  <div class="summary-header">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h1 style="font-size:20px;font-weight:600;">销售总结</h1>
+      <div style="display:flex;gap:8px;">
+        <button class="icon-btn" onclick="exportCSV()" title="导出CSV(Excel)">📊</button>
+        <button class="icon-btn" onclick="exportJSON()" title="导出备份(JSON)">💾</button>
+        <button class="icon-btn" onclick="openPresetManager()" title="商品预设">⚙</button>
+      </div>
+    </div>
+    <div class="period-tabs" id="periodTabs"></div>
+  </div>
+
+  <div class="summary-stats">
+    <div class="sum-stat">
+      <div class="ss-label">销售额</div>
+      <div class="ss-value" id="sumSales">¥0</div>
+    </div>
+    <div class="sum-stat">
+      <div class="ss-label">提成</div>
+      <div class="ss-value comm" id="sumComm">¥0</div>
+    </div>
+    <div class="sum-stat">
+      <div class="ss-label">销售件数</div>
+      <div class="ss-value" id="sumQty">0</div>
+    </div>
+  </div>
+
+  <!-- 分类占比 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">分类占比</div>
+    </div>
+    <div style="padding:4px 16px 12px;">
+      <div id="catBreakdown"></div>
+    </div>
+  </div>
+
+  <!-- 每日趋势 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">每日销售额趋势</div>
+    </div>
+    <div style="padding:0 16px 12px;">
+      <div class="trend-chart" id="trendChart"></div>
+    </div>
+  </div>
+
+  <!-- 热销排行 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title">热销商品排行</div>
+    </div>
+    <div style="padding:0 16px 12px;">
+      <div id="rankList"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 底部导航 ========== -->
+<div class="tab-bar">
+  <div class="tab-item active" onclick="switchTab('home')" id="tab-home">
+    <div class="tab-icon">🏠</div>
+    <div>首页</div>
+  </div>
+  <div class="tab-item" onclick="switchTab('summary')" id="tab-summary">
+    <div class="tab-icon">📊</div>
+    <div>总结</div>
+  </div>
+</div>
+
+<!-- 添加销售弹窗 -->
+<div class="modal-mask" id="addModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">添加销售</div>
+      <button class="modal-close" onclick="closeModal('addModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="bundle-row" id="bundleRows">
+        <!-- 主机 / 配件 / 回收 三个下拉框行，由JS渲染 -->
+      </div>
+      <div class="form-group">
+        <label class="form-label">日期</label>
+        <input class="form-input" id="fDate" type="date">
+      </div>
+      <div style="background:#f0f9ff; padding:12px; border-radius:10px; margin-top:8px;">
+        <div style="display:flex; justify-content:space-between; font-size:13px; margin-bottom:4px;">
+          <span style="color:var(--text-secondary)">总销售额</span>
+          <span style="font-weight:600" id="totalAmount">¥0.00</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:13px;">
+          <span style="color:var(--text-secondary)">总提成</span>
+          <span style="font-weight:600; color:var(--accent)" id="totalComm">¥0.00</span>
+        </div>
+      </div>
+      <div class="hint" style="margin-top:8px;">从主机、配件、回收中选择商品，三者均选中即为一单成交。</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('addModal')">取消</button>
+      <button class="btn btn-primary" onclick="saveRecord()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 当日明细弹窗 -->
+<div class="modal-mask" id="dayModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="dayModalTitle">销售明细</div>
+      <button class="modal-close" onclick="closeModal('dayModal')">×</button>
+    </div>
+    <div class="modal-body" id="dayModalBody"></div>
+  </div>
+</div>
+
+<!-- 预设管理弹窗 -->
+<div class="modal-mask" id="presetModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">商品预设</div>
+      <button class="modal-close" onclick="closeModal('presetModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="presetManageList"></div>
+      <button class="btn btn-primary btn-block" style="margin-top:12px;" onclick="openPresetEdit()">+ 添加预设商品</button>
+    </div>
+  </div>
+</div>
+
+<!-- 预设编辑弹窗 -->
+<div class="modal-mask" id="presetEditModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="presetEditTitle">添加预设商品</div>
+      <button class="modal-close" onclick="closeModal('presetEditModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="peId">
+      <div class="form-group">
+        <label class="form-label">商品名称</label>
+        <input class="form-input" id="peName" placeholder="如 iPhone 15 Pro">
+      </div>
+      <div class="form-group">
+        <label class="form-label">分类</label>
+        <select class="form-select" id="peCat">
+          <option value="phone">主机</option>
+          <option value="acc">配件</option>
+          <option value="recycle">回收</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">默认售价(元)</label>
+          <input class="form-input" id="pePrice" type="number" step="0.01" placeholder="0">
+        </div>
+        <div class="form-group">
+          <label class="form-label">提成方式</label>
+          <select class="form-select" id="peCommType" onchange="updatePeCommUnit()">
+            <option value="fixed">固定金额</option>
+            <option value="percent">按比例(%)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">提成值 <span id="peCommUnit" style="color:var(--text-secondary)">(元)</span></label>
+        <input class="form-input" id="peComm" type="number" step="0.01" placeholder="0">
+      </div>
+      <div class="hint">设置后可在添加销售时快速选择，自动填充价格和提成。</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('presetEditModal')">取消</button>
+      <button class="btn btn-primary" onclick="savePreset()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ 数据层 ============ */
+const LS_PRESETS = 'sales_presets';
+const LS_RECORDS = 'sales_records';
+
+function loadPresets() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(LS_PRESETS)) || [];
+    // 兼容旧数据：补充 commissionType 字段，pkg 分类迁移为 recycle
+    arr.forEach(p => {
+      if (!p.commissionType) p.commissionType = 'fixed';
+      if (p.category === 'pkg') p.category = 'recycle';
+    });
+    return arr;
+  } catch(e) { return []; }
+}
+function savePresets(arr) { localStorage.setItem(LS_PRESETS, JSON.stringify(arr)); }
+function loadRecords() {
+  try { return JSON.parse(localStorage.getItem(LS_RECORDS)) || []; } catch(e) { return []; }
+}
+function saveRecords(arr) { localStorage.setItem(LS_RECORDS, JSON.stringify(arr)); }
+
+// 初始化默认预设（首次使用）
+function initDefaultPresets() {
+  if (loadPresets().length > 0) return;
+  const defaults = [
+    { id: uid(), name: 'iPhone 15 Pro', category: 'phone', price: 8999, commission: 150, commissionType: 'fixed' },
+    { id: uid(), name: 'iPhone 15', category: 'phone', price: 5999, commission: 100, commissionType: 'fixed' },
+    { id: uid(), name: '华为 Mate 60 Pro', category: 'phone', price: 6999, commission: 120, commissionType: 'fixed' },
+    { id: uid(), name: '小米 14', category: 'phone', price: 3999, commission: 80, commissionType: 'fixed' },
+    { id: uid(), name: '手机壳', category: 'acc', price: 49, commission: 30, commissionType: 'percent' },
+    { id: uid(), name: '钢化膜', category: 'acc', price: 39, commission: 12, commissionType: 'fixed' },
+    { id: uid(), name: '充电器', category: 'acc', price: 99, commission: 25, commissionType: 'fixed' },
+    { id: uid(), name: '数据线', category: 'acc', price: 29, commission: 8, commissionType: 'fixed' },
+    { id: uid(), name: '耳机', category: 'acc', price: 199, commission: 40, commissionType: 'fixed' },
+    { id: uid(), name: '回收旧iPhone', category: 'recycle', price: 1500, commission: 100, commissionType: 'fixed' },
+    { id: uid(), name: '回收旧华为', category: 'recycle', price: 800, commission: 50, commissionType: 'fixed' },
+    { id: uid(), name: '回收旧安卓', category: 'recycle', price: 300, commission: 20, commissionType: 'fixed' },
+  ];
+  savePresets(defaults);
+}
+initDefaultPresets();
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+/* ============ 工具函数 ============ */
+function fmt(n) { return '¥' + (Number(n) || 0).toFixed(2); }
+function fmtInt(n) {
+  n = Number(n) || 0;
+  return '¥' + (n >= 10000 ? (n/10000).toFixed(1) + '万' : n.toFixed(0));
+}
+// HTML 转义，防止 XSS
+function esc(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function isSameDay(d, y, m, day) {
+  return d.getFullYear()===y && d.getMonth()===m && d.getDate()===day;
+}
+
+/* ============ 状态 ============ */
+let viewYear, viewMonth; // 当前查看的月份
+
+function init() {
+  const now = new Date();
+  viewYear = now.getFullYear();
+  viewMonth = now.getMonth();
+  document.getElementById('fDate').value = todayStr();
+  renderAll();
+}
+
+/* ============ 渲染 ============ */
+function renderAll() {
+  renderHeaderStats();
+  renderCalendar();
+}
+
+function renderHeaderStats() {
+  document.getElementById('todayText').textContent = new Date().toLocaleDateString('zh-CN', {year:'numeric',month:'long',day:'numeric',weekday:'long'});
+  const records = loadRecords();
+  const today = todayStr();
+  const now = new Date();
+  const ym = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+
+  let todayComm = 0, monthComm = 0, monthSales = 0;
+  records.forEach(r => {
+    if (r.date === today) todayComm += r.totalCommission;
+    if (r.date.startsWith(ym)) {
+      monthComm += r.totalCommission;
+      monthSales += r.totalAmount;
+    }
+  });
+  document.getElementById('todayComm').textContent = fmt(todayComm);
+  document.getElementById('monthComm').textContent = fmt(monthComm);
+  document.getElementById('monthSales').textContent = fmtInt(monthSales);
+}
+
+function renderCalendar() {
+  document.getElementById('calMonthTitle').textContent = viewYear + '年' + (viewMonth+1) + '月';
+  const daysEl = document.getElementById('calDays');
+  daysEl.innerHTML = '';
+
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+  const prevMonthDays = new Date(viewYear, viewMonth, 0).getDate();
+  const records = loadRecords();
+  const today = new Date();
+
+  // 按日期汇总提成
+  const dayComm = {};
+  records.forEach(r => {
+    if (r.date.startsWith(viewYear + '-' + String(viewMonth+1).padStart(2,'0'))) {
+      dayComm[r.date.slice(8,10)] = (dayComm[r.date.slice(8,10)] || 0) + r.totalCommission;
+    }
+  });
+
+  // 上月填充
+  for (let i = firstDay - 1; i >= 0; i--) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-day empty out-month';
+    cell.innerHTML = '<div class="day-num">' + (prevMonthDays - i) + '</div>';
+    daysEl.appendChild(cell);
+  }
+  // 当月
+  for (let d = 1; d <= daysInMonth; d++) {
+    const cell = document.createElement('div');
+    const dd = String(d).padStart(2,'0');
+    const dateStr = viewYear + '-' + String(viewMonth+1).padStart(2,'0') + '-' + dd;
+    cell.className = 'cal-day';
+    const comm = dayComm[dd];
+    if (comm) cell.classList.add('has-record');
+    if (isSameDay(today, viewYear, viewMonth, d)) cell.classList.add('today');
+    cell.innerHTML = '<div class="day-num">' + d + '</div>' +
+      (comm ? '<div class="day-comm">' + fmtInt(comm) + '</div>' : '');
+    cell.onclick = () => openDayDetail(dateStr);
+    daysEl.appendChild(cell);
+  }
+  // 下月填充（凑整）
+  const total = firstDay + daysInMonth;
+  const rem = (7 - total % 7) % 7;
+  for (let i = 1; i <= rem; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-day empty out-month';
+    cell.innerHTML = '<div class="day-num">' + i + '</div>';
+    daysEl.appendChild(cell);
+  }
+}
+
+function changeMonth(delta) {
+  viewMonth += delta;
+  if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+  else if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+  renderCalendar();
+}
+
+/* ============ 添加销售 ============ */
+// 三个分类定义
+const BUNDLE_CATS = [
+  { key: 'phone', label: '主机' },
+  { key: 'acc', label: '配件' },
+  { key: 'recycle', label: '回收' },
+];
+const CAT_LABEL = { phone:'主机', acc:'配件', recycle:'回收' };
+
+// 根据提成方式计算单件实际提成金额（元）
+function calcUnitCommission(price, commValue, commType) {
+  if (commType === 'percent') {
+    return price * (commValue / 100);
+  }
+  return commValue; // fixed
+}
+
+function openAddModal() {
+  document.getElementById('addModal').classList.add('show');
+  document.getElementById('fDate').value = todayStr();
+  renderBundleRows();
+  updateTotals();
+}
+
+// 渲染三行（主机/配件 下拉，回收 手动输入）
+function renderBundleRows() {
+  const presets = loadPresets();
+  const el = document.getElementById('bundleRows');
+  let html = '';
+  // 主机、配件：下拉选择
+  BUNDLE_CATS.filter(c => c.key !== 'recycle').forEach(cat => {
+    const items = presets.filter(p => p.category === cat.key);
+    const options = '<option value="">不选</option>' +
+      items.map(p => '<option value="' + esc(p.id) + '">' + esc(p.name) + '（' + fmt(p.price) + '）</option>').join('');
+    html += '<div class="bundle-item" data-cat="' + cat.key + '">' +
+      '<div class="bi-label">' + cat.label + '</div>' +
+      '<select class="form-select bi-select" id="sel_' + cat.key + '" onchange="onBundleChange()">' + options + '</select>' +
+      '<input class="form-input bi-qty" id="qty_' + cat.key + '" type="number" value="1" min="1" oninput="updateTotals()">' +
+      '<div class="bi-info" id="info_' + cat.key + '">未选择</div>' +
+      '</div>';
+  });
+  // 回收：手动输入
+  html += '<div class="bundle-item" data-cat="recycle">' +
+    '<div class="bi-label">回收</div>' +
+    '<input class="form-input" id="rec_name" placeholder="回收商品名称（如 旧iPhone 12）" oninput="updateTotals()">' +
+    '<input class="form-input bi-qty" id="qty_recycle" type="number" value="1" min="1" oninput="updateTotals()">' +
+    '<div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:6px;">' +
+      '<input class="form-input" id="rec_price" type="number" step="0.01" placeholder="单价(元)" oninput="updateTotals()">' +
+      '<select class="form-select" id="rec_commType" onchange="updateRecycleUnit()">' +
+        '<option value="fixed">固定金额</option>' +
+        '<option value="percent">按比例(%)</option>' +
+      '</select>' +
+      '<input class="form-input" id="rec_comm" type="number" step="0.01" placeholder="提成值" oninput="updateTotals()">' +
+    '</div>' +
+    '<div class="bi-info" id="info_recycle">手动填写回收商品信息</div>' +
+    '</div>';
+  el.innerHTML = html;
+}
+
+// 下拉框变化时更新小计信息（主机、配件）
+function onBundleChange() {
+  BUNDLE_CATS.filter(c => c.key !== 'recycle').forEach(cat => {
+    const sel = document.getElementById('sel_' + cat.key);
+    const info = document.getElementById('info_' + cat.key);
+    const id = sel.value;
+    if (!id) { info.textContent = '未选择'; return; }
+    const p = loadPresets().find(x => x.id === id);
+    if (!p) { info.textContent = '未选择'; return; }
+    const commText = p.commissionType === 'percent' ? (p.commission + '%') : fmt(p.commission);
+    const commLabel = p.commissionType === 'percent' ? '提成比例' : '提成';
+    info.textContent = '售价 ' + fmt(p.price) + ' · ' + commLabel + ' ' + commText;
+  });
+  updateTotals();
+}
+
+// 更新回收提成单位提示（可选增强，不影响计算）
+function updateRecycleUnit() { updateTotals(); }
+
+// 计算总额和总提成（主机+配件+回收 的合计）
+function updateTotals() {
+  let totalAmount = 0, totalComm = 0;
+  // 主机、配件
+  BUNDLE_CATS.filter(c => c.key !== 'recycle').forEach(cat => {
+    const sel = document.getElementById('sel_' + cat.key);
+    if (!sel || !sel.value) return;
+    const p = loadPresets().find(x => x.id === sel.value);
+    if (!p) return;
+    const qty = Math.max(1, parseInt(document.getElementById('qty_' + cat.key).value) || 1);
+    const unitComm = calcUnitCommission(p.price, p.commission, p.commissionType);
+    totalAmount += p.price * qty;
+    totalComm += unitComm * qty;
+  });
+  // 回收（手动输入）
+  const recName = (document.getElementById('rec_name') || {}).value || '';
+  const recPrice = parseFloat((document.getElementById('rec_price') || {}).value) || 0;
+  const recComm = parseFloat((document.getElementById('rec_comm') || {}).value) || 0;
+  const recCommType = (document.getElementById('rec_commType') || {}).value || 'fixed';
+  const recQty = Math.max(1, parseInt((document.getElementById('qty_recycle') || {}).value) || 1);
+  if (recName.trim() && recPrice > 0) {
+    const unitComm = calcUnitCommission(recPrice, recComm, recCommType);
+    totalAmount += recPrice * recQty;
+    totalComm += unitComm * recQty;
+    const info = document.getElementById('info_recycle');
+    if (info) {
+      const commText = recCommType === 'percent' ? (recComm + '%') : fmt(recComm);
+      const commLabel = recCommType === 'percent' ? '提成比例' : '提成';
+      info.textContent = '售价 ' + fmt(recPrice) + ' · ' + commLabel + ' ' + commText + ' → 每件提成 ' + fmt(unitComm) + ' × ' + recQty + ' = ' + fmt(unitComm * recQty);
+    }
+  } else {
+    const info = document.getElementById('info_recycle');
+    if (info) info.textContent = '填写名称和单价后自动计算提成';
+  }
+  document.getElementById('totalAmount').textContent = fmt(totalAmount);
+  document.getElementById('totalComm').textContent = fmt(totalComm);
+}
+
+function saveRecord() {
+  const date = document.getElementById('fDate').value || todayStr();
+  const txId = 'tx_' + Date.now();
+  const records = loadRecords();
+  let count = 0;
+  // 主机、配件
+  BUNDLE_CATS.filter(c => c.key !== 'recycle').forEach(cat => {
+    const sel = document.getElementById('sel_' + cat.key);
+    if (!sel || !sel.value) return;
+    const p = loadPresets().find(x => x.id === sel.value);
+    if (!p) return;
+    const qty = Math.max(1, parseInt(document.getElementById('qty_' + cat.key).value) || 1);
+    const unitComm = calcUnitCommission(p.price, p.commission, p.commissionType);
+    records.push({
+      id: uid(), txId: txId, itemName: p.name, category: p.category,
+      quantity: qty, unitPrice: p.price,
+      commissionType: p.commissionType, commissionValue: p.commission,
+      unitCommission: unitComm, totalAmount: p.price * qty,
+      totalCommission: unitComm * qty, date: date, createdAt: Date.now()
+    });
+    count++;
+  });
+  // 回收（手动输入）
+  const recName = ((document.getElementById('rec_name') || {}).value || '').trim();
+  const recPrice = parseFloat((document.getElementById('rec_price') || {}).value) || 0;
+  const recComm = parseFloat((document.getElementById('rec_comm') || {}).value) || 0;
+  const recCommType = (document.getElementById('rec_commType') || {}).value || 'fixed';
+  const recQty = Math.max(1, parseInt((document.getElementById('qty_recycle') || {}).value) || 1);
+  if (recName && recPrice > 0 && recQty >= 1) {
+    const unitComm = calcUnitCommission(recPrice, recComm, recCommType);
+    records.push({
+      id: uid(), txId: txId, itemName: recName, category: 'recycle',
+      quantity: recQty, unitPrice: recPrice,
+      commissionType: recCommType, commissionValue: recComm,
+      unitCommission: unitComm, totalAmount: recPrice * recQty,
+      totalCommission: unitComm * recQty, date: date, createdAt: Date.now()
+    });
+    count++;
+  }
+  if (count === 0) { alert('请至少添加一件商品（选择主机/配件或填写回收信息）'); return; }
+  saveRecords(records);
+  closeModal('addModal');
+  renderAll();
+}
+
+/* ============ 当日明细 ============ */
+function openDayDetail(dateStr) {
+  const records = loadRecords().filter(r => r.date === dateStr);
+  const el = document.getElementById('dayModalBody');
+  // 手动解析日期，避免 new Date('YYYY-MM-DD') 的时区偏移问题
+  const parts = dateStr.split('-');
+  const d = new Date(+parts[0], +parts[1]-1, +parts[2]);
+  document.getElementById('dayModalTitle').textContent =
+    (d.getMonth()+1) + '月' + d.getDate() + '日 销售明细';
+
+  if (records.length === 0) {
+    el.innerHTML = '<div class="empty-state">当日暂无销售记录</div>';
+  } else {
+    let totalAmount = 0, totalComm = 0;
+    records.forEach(r => { totalAmount += r.totalAmount; totalComm += r.totalCommission; });
+    el.innerHTML =
+      '<div style="background:#f0f9ff;padding:12px;border-radius:10px;margin-bottom:12px;">' +
+      '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;">' +
+      '<span style="color:var(--text-secondary)">销售额</span><span style="font-weight:600">' + fmt(totalAmount) + '</span></div>' +
+      '<div style="display:flex;justify-content:space-between;font-size:13px;">' +
+      '<span style="color:var(--text-secondary)">提成</span><span style="font-weight:600;color:var(--accent)">' + fmt(totalComm) + '</span></div>' +
+      '</div>' +
+      records.map(r => {
+        const ct = r.commissionType || 'fixed';
+        const commVal = r.commissionValue != null ? r.commissionValue : (r.unitCommission || 0);
+        const commDesc = ct === 'percent'
+          ? ('单价 ' + fmt(r.unitPrice) + ' × ' + r.quantity + '（提成 ' + commVal + '%）')
+          : ('单价 ' + fmt(r.unitPrice) + ' × ' + r.quantity);
+        const catLabel = CAT_LABEL[r.category] || '';
+        const catTag = catLabel ? '<span class="cat-tag cat-'+esc(r.category)+'">'+esc(catLabel)+'</span>' : '';
+        return '<div class="record-item">' +
+          '<div class="record-left">' +
+            '<div class="r-name">' + esc(r.itemName) + catTag + '</div>' +
+            '<div class="r-qty">' + commDesc + '</div>' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;">' +
+            '<div class="record-right">' +
+              '<div class="r-amount">' + fmt(r.totalAmount) + '</div>' +
+              '<div class="r-comm">提成 ' + fmt(r.totalCommission) + '</div>' +
+            '</div>' +
+            '<button class="record-del" onclick="delRecord(\''+esc(r.id)+'\',\''+esc(dateStr)+'\')">删除</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+  }
+  document.getElementById('dayModal').classList.add('show');
+}
+
+function delRecord(id, dateStr) {
+  if (!confirm('确定删除这条销售记录？')) return;
+  saveRecords(loadRecords().filter(r => r.id !== id));
+  openDayDetail(dateStr);
+  renderAll();
+}
+
+/* ============ 预设管理 ============ */
+function openPresetManager() {
+  renderPresetManageList();
+  document.getElementById('presetModal').classList.add('show');
+}
+
+function renderPresetManageList() {
+  const presets = loadPresets();
+  const el = document.getElementById('presetManageList');
+  if (presets.length === 0) {
+    el.innerHTML = '<div class="empty-state">还没有预设商品，点击下方添加</div>';
+    return;
+  }
+  const catMap = {phone:'主机', acc:'配件', recycle:'回收'};
+  el.innerHTML = presets.map(p => {
+    const commText = p.commissionType === 'percent' ? (p.commission + '%') : fmt(p.commission);
+    const commLabel = p.commissionType === 'percent' ? '提成比例' : '提成';
+    return '<div class="pm-item">' +
+      '<div class="pm-info">' +
+        '<div class="pm-name">' + esc(p.name) + '<span class="cat-tag cat-'+esc(p.category)+'">'+esc(catMap[p.category])+'</span></div>' +
+        '<div class="pm-detail">售价 ' + fmt(p.price) + ' · ' + commLabel + ' ' + commText + '</div>' +
+      '</div>' +
+      '<div class="pm-actions">' +
+        '<button class="edit" onclick="editPreset(\''+esc(p.id)+'\')">编辑</button>' +
+        '<button class="del" onclick="delPreset(\''+esc(p.id)+'\')">删除</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// 更新预设编辑的提成单位显示
+function updatePeCommUnit() {
+  const type = document.getElementById('peCommType').value;
+  document.getElementById('peCommUnit').textContent = type === 'percent' ? '(%)' : '(元)';
+}
+
+function openPresetEdit() {
+  document.getElementById('peId').value = '';
+  document.getElementById('peName').value = '';
+  document.getElementById('peCat').value = 'phone';
+  document.getElementById('pePrice').value = '';
+  document.getElementById('peCommType').value = 'fixed';
+  document.getElementById('peComm').value = '';
+  updatePeCommUnit();
+  document.getElementById('presetEditTitle').textContent = '添加预设商品';
+  document.getElementById('presetEditModal').classList.add('show');
+}
+
+function editPreset(id) {
+  const p = loadPresets().find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('peId').value = p.id;
+  document.getElementById('peName').value = p.name;
+  document.getElementById('peCat').value = p.category;
+  document.getElementById('pePrice').value = p.price;
+  document.getElementById('peCommType').value = p.commissionType || 'fixed';
+  document.getElementById('peComm').value = p.commission;
+  updatePeCommUnit();
+  document.getElementById('presetEditTitle').textContent = '编辑预设商品';
+  document.getElementById('presetEditModal').classList.add('show');
+}
+
+function savePreset() {
+  const id = document.getElementById('peId').value;
+  const name = document.getElementById('peName').value.trim();
+  const category = document.getElementById('peCat').value;
+  const price = parseFloat(document.getElementById('pePrice').value) || 0;
+  const commissionType = document.getElementById('peCommType').value;
+  const commission = parseFloat(document.getElementById('peComm').value) || 0;
+  if (!name) { alert('请输入商品名称'); return; }
+
+  const presets = loadPresets();
+  if (id) {
+    const p = presets.find(x => x.id === id);
+    if (p) { p.name = name; p.category = category; p.price = price; p.commissionType = commissionType; p.commission = commission; }
+  } else {
+    presets.push({ id: uid(), name, category, price, commissionType, commission });
+  }
+  savePresets(presets);
+  closeModal('presetEditModal');
+  renderPresetManageList();
+}
+
+function delPreset(id) {
+  if (!confirm('确定删除该预设商品？')) return;
+  savePresets(loadPresets().filter(p => p.id !== id));
+  renderPresetManageList();
+}
+
+/* ============ 弹窗控制 ============ */
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+// 点击遮罩关闭
+document.querySelectorAll('.modal-mask').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); });
+});
+
+/* ============ 页面切换 ============ */
+function switchTab(tab) {
+  document.getElementById('page-home').classList.toggle('active', tab === 'home');
+  document.getElementById('page-summary').classList.toggle('active', tab === 'summary');
+  document.getElementById('tab-home').classList.toggle('active', tab === 'home');
+  document.getElementById('tab-summary').classList.toggle('active', tab === 'summary');
+  // 显隐添加按钮（仅首页显示）
+  document.querySelector('.fab-container').classList.toggle('hide', tab !== 'home');
+  if (tab === 'summary') renderSummary();
+  window.scrollTo(0, 0);
+}
+
+/* ============ 销售总结 ============ */
+let summaryPeriod = 'month'; // today | 7d | month | lastmonth | year
+
+const PERIOD_OPTIONS = [
+  { key: 'today', label: '今日' },
+  { key: '7d', label: '近7天' },
+  { key: 'month', label: '本月' },
+  { key: 'lastmonth', label: '上月' },
+  { key: 'year', label: '本年' },
+];
+
+function renderPeriodTabs() {
+  document.getElementById('periodTabs').innerHTML = PERIOD_OPTIONS.map(p =>
+    '<button class="period-tab ' + (summaryPeriod===p.key?'active':'') + '" onclick="setPeriod(\''+p.key+'\')">' + p.label + '</button>'
+  ).join('');
+}
+
+function setPeriod(key) {
+  summaryPeriod = key;
+  renderSummary();
+}
+
+// 获取指定时间段内的记录
+function getPeriodRecords() {
+  const records = loadRecords();
+  const now = new Date();
+  const today = todayStr();
+  const ym = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0');
+  const y = String(now.getFullYear());
+  const last = new Date(now.getFullYear(), now.getMonth()-1, 1);
+  const lastYm = last.getFullYear() + '-' + String(last.getMonth()+1).padStart(2,'0');
+  const sevenDaysAgo = new Date(now.getTime() - 6*24*3600*1000);
+  const sevenStr = sevenDaysAgo.getFullYear() + '-' + String(sevenDaysAgo.getMonth()+1).padStart(2,'0') + '-' + String(sevenDaysAgo.getDate()).padStart(2,'0');
+
+  return records.filter(r => {
+    switch(summaryPeriod) {
+      case 'today': return r.date === today;
+      case '7d': return r.date >= sevenStr && r.date <= today;
+      case 'month': return r.date.startsWith(ym);
+      case 'lastmonth': return r.date.startsWith(lastYm);
+      case 'year': return r.date.startsWith(y);
+      default: return true;
+    }
+  });
+}
+
+// 根据记录获取分类（优先用记录自带的 category，否则按商品名查预设）
+function getCategoryByName(name, record) {
+  if (record && record.category) return record.category;
+  const p = loadPresets().find(x => x.name === name);
+  return p ? p.category : 'other';
+}
+
+function renderSummary() {
+  renderPeriodTabs();
+  const records = getPeriodRecords();
+  const catMap = { phone:'主机', acc:'配件', recycle:'回收', other:'其他' };
+  const catColors = { phone:'phone', acc:'acc', recycle:'recycle', other:'other' };
+
+  // 总览
+  let totalSales = 0, totalComm = 0, totalQty = 0;
+  records.forEach(r => {
+    totalSales += r.totalAmount;
+    totalComm += r.totalCommission;
+    totalQty += r.quantity;
+  });
+  document.getElementById('sumSales').textContent = fmtInt(totalSales);
+  document.getElementById('sumComm').textContent = fmt(totalComm);
+  document.getElementById('sumQty').textContent = totalQty;
+
+  // 分类占比
+  const catData = { phone:{sales:0,comm:0,qty:0}, acc:{sales:0,comm:0,qty:0}, recycle:{sales:0,comm:0,qty:0}, other:{sales:0,comm:0,qty:0} };
+  records.forEach(r => {
+    const c = getCategoryByName(r.itemName, r);
+    catData[c].sales += r.totalAmount;
+    catData[c].comm += r.totalCommission;
+    catData[c].qty += r.quantity;
+  });
+  const maxCatSales = Math.max(1, ...Object.values(catData).map(c => c.sales));
+  const catOrder = ['phone','acc','recycle','other'];
+  const catEl = document.getElementById('catBreakdown');
+  if (totalSales === 0) {
+    catEl.innerHTML = '<div class="empty-state">该时段暂无销售数据</div>';
+  } else {
+    catEl.innerHTML = catOrder.map(c => {
+      const d = catData[c];
+      if (d.sales === 0 && c === 'other') return '';
+      const pct = (d.sales / maxCatSales * 100).toFixed(0);
+      return '<div class="cat-bar-item">' +
+        '<div class="cat-bar-label">' + catMap[c] + '</div>' +
+        '<div class="cat-bar-track"><div class="cat-bar-fill ' + catColors[c] + '" style="width:' + pct + '%"></div></div>' +
+        '<div class="cat-bar-value">' + fmtInt(d.sales) + '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  // 热销排行（按销售额）
+  const itemMap = {};
+  records.forEach(r => {
+    if (!itemMap[r.itemName]) itemMap[r.itemName] = { name: r.itemName, qty: 0, sales: 0, comm: 0 };
+    itemMap[r.itemName].qty += r.quantity;
+    itemMap[r.itemName].sales += r.totalAmount;
+    itemMap[r.itemName].comm += r.totalCommission;
+  });
+  const ranked = Object.values(itemMap).sort((a,b) => b.sales - a.sales).slice(0, 10);
+  const rankEl = document.getElementById('rankList');
+  if (ranked.length === 0) {
+    rankEl.innerHTML = '<div class="empty-state">该时段暂无销售数据</div>';
+  } else {
+    rankEl.innerHTML = ranked.map((it, i) =>
+      '<div class="rank-item top' + (i+1) + '">' +
+        '<div class="rank-num">' + (i+1) + '</div>' +
+        '<div class="rank-info">' +
+          '<div class="rank-name">' + esc(it.name) + '</div>' +
+          '<div class="rank-sub">销量 ' + it.qty + ' 件 · 提成 ' + fmt(it.comm) + '</div>' +
+        '</div>' +
+        '<div class="rank-amount">' + fmtInt(it.sales) + '</div>' +
+      '</div>'
+    ).join('');
+  }
+
+  // 每日趋势
+  renderTrendChart(records);
+}
+
+function renderTrendChart(records) {
+  const el = document.getElementById('trendChart');
+  // 按日期汇总销售额
+  const daySales = {};
+  records.forEach(r => {
+    daySales[r.date] = (daySales[r.date] || 0) + r.totalAmount;
+  });
+  const dates = Object.keys(daySales).sort();
+  if (dates.length === 0) {
+    el.innerHTML = '<div style="width:100%;text-align:center;color:var(--text-secondary);font-size:13px;align-self:center;">暂无数据</div>';
+    return;
+  }
+  // 限制最多显示 31 个柱子
+  const showDates = dates.slice(-31);
+  const maxVal = Math.max(1, ...showDates.map(d => daySales[d]));
+  el.innerHTML = showDates.map(d => {
+    const h = Math.max(3, (daySales[d] / maxVal) * 100);
+    const label = d.slice(5); // MM-DD
+    return '<div class="trend-bar-wrap">' +
+      '<div class="trend-bar" style="height:' + h + '%"></div>' +
+      '<div class="trend-bar-label">' + label + '</div>' +
+      '</div>';
+  }).join('');
+}
+
+/* ============ 数据导出 ============ */
+// 通用下载函数
+function downloadFile(filename, content, mimeType) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// 导出销售记录为 CSV（Excel 兼容，带 BOM）
+function exportCSV() {
+  const records = loadRecords();
+  if (records.length === 0) { alert('暂无销售记录可导出'); return; }
+  const catMap = { phone:'主机', acc:'配件', recycle:'回收', other:'其他' };
+  const headers = ['日期','分类','商品名称','数量','单价','提成方式','提成值','单件提成','总销售额','总提成'];
+  const rows = records.map(r => {
+    const ct = r.commissionType || 'fixed';
+    return [
+      r.date,
+      catMap[r.category] || (r.category || ''),
+      r.itemName,
+      r.quantity,
+      r.unitPrice,
+      ct === 'percent' ? '按比例' : '固定金额',
+      r.commissionValue != null ? r.commissionValue : '',
+      r.unitCommission,
+      r.totalAmount,
+      r.totalCommission
+    ];
+  });
+  // CSV 转义：含逗号/引号/换行的字段用双引号包裹，内部双引号转义
+  const escapeCSV = v => {
+    const s = String(v == null ? '' : v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const csv = [headers, ...rows].map(row => row.map(escapeCSV).join(',')).join('\n');
+  // 加 BOM 让 Excel 正确识别 UTF-8 中文
+  const bom = '\uFEFF';
+  const filename = '销售记录_' + todayStr() + '.csv';
+  downloadFile(filename, bom + csv, 'text/csv;charset=utf-8;');
+}
+
+// 导出全部数据为 JSON 备份（销售记录 + 商品预设）
+function exportJSON() {
+  const data = {
+    exportTime: new Date().toISOString(),
+    version: 1,
+    presets: loadPresets(),
+    records: loadRecords()
+  };
+  const filename = '销售记账备份_' + todayStr() + '.json';
+  downloadFile(filename, JSON.stringify(data, null, 2), 'application/json;charset=utf-8;');
+}
+
+init();
+</script>
+</body>
+</html>
